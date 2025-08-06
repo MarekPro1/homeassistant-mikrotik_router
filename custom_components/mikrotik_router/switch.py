@@ -17,9 +17,6 @@ from .helper import format_attribute
 from .switch_types import (
     SENSOR_TYPES,
     SENSOR_SERVICES,
-    DEVICE_ATTRIBUTES_IFACE_ETHER,
-    DEVICE_ATTRIBUTES_IFACE_SFP,
-    DEVICE_ATTRIBUTES_IFACE_WIRELESS,
 )
 
 _LOGGER = getLogger(__name__)
@@ -36,7 +33,6 @@ async def async_setup_entry(
     """Set up entry for component"""
     dispatcher = {
         "MikrotikSwitch": MikrotikSwitch,
-        "MikrotikPortSwitch": MikrotikPortSwitch,
         "MikrotikNATSwitch": MikrotikNATSwitch,
         "MikrotikMangleSwitch": MikrotikMangleSwitch,
         "MikrotikFilterSwitch": MikrotikFilterSwitch,
@@ -95,92 +91,6 @@ class MikrotikSwitch(MikrotikEntity, SwitchEntity, RestoreEntity):
         value = self._data[self.entity_description.data_reference]
         mod_param = self.entity_description.data_switch_parameter
         self.coordinator.set_value(path, param, value, mod_param, True)
-        await self.coordinator.async_refresh()
-
-
-# ---------------------------
-#   MikrotikPortSwitch
-# ---------------------------
-class MikrotikPortSwitch(MikrotikSwitch):
-    """Representation of a network port switch."""
-
-    @property
-    def extra_state_attributes(self) -> Mapping[str, Any]:
-        """Return the state attributes."""
-        attributes = super().extra_state_attributes
-
-        if self._data["type"] == "ether":
-            for variable in DEVICE_ATTRIBUTES_IFACE_ETHER:
-                if variable in self._data:
-                    attributes[format_attribute(variable)] = self._data[variable]
-
-            if "sfp-shutdown-temperature" in self._data:
-                for variable in DEVICE_ATTRIBUTES_IFACE_SFP:
-                    if variable in self._data:
-                        attributes[format_attribute(variable)] = self._data[variable]
-
-        elif self._data["type"] == "wlan":
-            for variable in DEVICE_ATTRIBUTES_IFACE_WIRELESS:
-                if variable in self._data:
-                    attributes[format_attribute(variable)] = self._data[variable]
-
-        return attributes
-
-    @property
-    def icon(self) -> str:
-        """Return the icon."""
-        if self._data["running"]:
-            icon = self.entity_description.icon_enabled
-        else:
-            icon = self.entity_description.icon_disabled
-
-        if not self._data["enabled"]:
-            icon = "mdi:lan-disconnect"
-
-        return icon
-
-    async def async_turn_on(self) -> Optional[str]:
-        """Turn on the switch."""
-        if "write" not in self.coordinator.data["access"]:
-            return
-
-        path = self.entity_description.data_switch_path
-        param = self.entity_description.data_reference
-        if self._data["about"] == "managed by CAPsMAN":
-            _LOGGER.error("Unable to enable %s, managed by CAPsMAN", self._data[param])
-            return "managed by CAPsMAN"
-        if "-" in self._data["port-mac-address"]:
-            param = "name"
-        value = self._data[self.entity_description.data_reference]
-        mod_param = self.entity_description.data_switch_parameter
-        self.coordinator.set_value(path, param, value, mod_param, False)
-
-        if "poe-out" in self._data and self._data["poe-out"] == "off":
-            path = "/interface/ethernet"
-            self.coordinator.set_value(path, param, value, "poe-out", "auto-on")
-
-        await self.coordinator.async_refresh()
-
-    async def async_turn_off(self) -> Optional[str]:
-        """Turn off the switch."""
-        if "write" not in self.coordinator.data["access"]:
-            return
-
-        path = self.entity_description.data_switch_path
-        param = self.entity_description.data_reference
-        if self._data["about"] == "managed by CAPsMAN":
-            _LOGGER.error("Unable to disable %s, managed by CAPsMAN", self._data[param])
-            return "managed by CAPsMAN"
-        if "-" in self._data["port-mac-address"]:
-            param = "name"
-        value = self._data[self.entity_description.data_reference]
-        mod_param = self.entity_description.data_switch_parameter
-        self.coordinator.set_value(path, param, value, mod_param, True)
-
-        if "poe-out" in self._data and self._data["poe-out"] == "auto-on":
-            path = "/interface/ethernet"
-            self.coordinator.set_value(path, param, value, "poe-out", "off")
-
         await self.coordinator.async_refresh()
 
 

@@ -229,18 +229,7 @@ class MikrotikControllerOptionsFlowHandler(OptionsFlow):
             step_id="sensor_select",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(
-                        CONF_SENSOR_PORT_TRACKER,
-                        default=self.config_entry.options.get(
-                            CONF_SENSOR_PORT_TRACKER, DEFAULT_SENSOR_PORT_TRACKER
-                        ),
-                    ): bool,
-                    vol.Optional(
-                        CONF_SENSOR_PORT_TRAFFIC,
-                        default=self.config_entry.options.get(
-                            CONF_SENSOR_PORT_TRAFFIC, DEFAULT_SENSOR_PORT_TRAFFIC
-                        ),
-                    ): bool,
+                    
                     vol.Optional(
                         CONF_TRACK_HOSTS,
                         default=self.config_entry.options.get(
